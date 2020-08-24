@@ -101,6 +101,7 @@ fabric.properties
 .mtj.tmp/
 
 # Package Files #
+!./max8-libs/*.jar
 *.jar
 *.war
 *.nar
