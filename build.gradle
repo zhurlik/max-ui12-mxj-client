@@ -2,6 +2,7 @@ plugins {
     id 'java-library'
     id 'idea'
     id 'checkstyle'
+    id 'jacoco'
 }
 
 java {
@@ -54,4 +55,6 @@ test {
     onOutput { descriptor, event ->
         logger.lifecycle("Test: " + descriptor + " produced standard out/err: " + event.message)
     }
+
+    finalizedBy jacocoTestReport // report is always generated after tests run
 }
