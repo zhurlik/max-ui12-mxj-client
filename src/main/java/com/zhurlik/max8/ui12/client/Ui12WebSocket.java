@@ -1,7 +1,6 @@
 package com.zhurlik.max8.ui12.client;
 
 import org.java_websocket.client.WebSocketClient;
-import org.java_websocket.framing.CloseFrame;
 import org.java_websocket.handshake.ServerHandshake;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -21,6 +20,11 @@ public abstract class Ui12WebSocket extends WebSocketClient {
     private static final Logger LOG = LoggerFactory.getLogger(Ui12WebSocket.class);
     private Instant startSession;
 
+    /**
+     * Constructor by URI.
+     *
+     * @param serverUri WebSocket server
+     */
     public Ui12WebSocket(final URI serverUri) {
         super(serverUri);
     }
@@ -59,11 +63,11 @@ public abstract class Ui12WebSocket extends WebSocketClient {
      *
      * @param message a websocket message
      */
-    protected abstract void handle(final String message);
+    protected abstract void handle(String message);
 
     /**
      *
-     * @param code an error code, see {@link CloseFrame}
+     * @param code an error code, see {@link org.java_websocket.framing.CloseFrame}
      * @param reason some additional details
      * @param remote Returns whether or not the closing of the connection was initiated by the remote host.
      */

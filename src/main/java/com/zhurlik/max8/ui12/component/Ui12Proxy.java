@@ -29,6 +29,11 @@ public class Ui12Proxy extends MaxObject {
     // a single thread to check network status.
     private static final Executor EXECUTOR = Executors.newSingleThreadExecutor();
 
+    // Timeouts
+    private static final int PING_TIMEOUT = 3000;
+    private static final int FIVE = 5;
+    private static final int TEN = 10;
+
     // the client for connecting to the WebSocket server on the Ui12 device.
     private Ui12WebSocket ui12WebSocket;
 
@@ -52,7 +57,7 @@ public class Ui12Proxy extends MaxObject {
      * @param args    a body of the message
      */
     @Override
-    protected void anything(String message, Atom[] args) {
+    protected void anything(final String message, final Atom[] args) {
         LOG.debug(">> Max8 signal: message = {}, args = {}", message, Atom.toDebugString(args));
         switch (message) {
             case "url":
@@ -61,9 +66,7 @@ public class Ui12Proxy extends MaxObject {
             case "msg":
                 toUi12Device(args);
                 break;
-            default: {
-
-            }
+            default:
         }
     }
 
@@ -124,7 +127,7 @@ public class Ui12Proxy extends MaxObject {
      * @param value expected 1 or 2
      */
     @Override
-    protected void inlet(int value) {
+    protected void inlet(final int value) {
         LOG.debug(">> Max8 signal: value = {}", value);
         LOG.debug(">> Inlet:{}", getInlet());
 
@@ -135,8 +138,7 @@ public class Ui12Proxy extends MaxObject {
             case 0:
                 stop();
                 break;
-            default: {
-            }
+            default:
         }
     }
 
@@ -199,7 +201,7 @@ public class Ui12Proxy extends MaxObject {
             while (url != null) {
                 final boolean reachable = isHostAvailable();
                 try {
-                    TimeUnit.SECONDS.sleep((reachable) ? 10 : 5);
+                    TimeUnit.SECONDS.sleep((reachable) ? TEN : FIVE);
                 } catch (InterruptedException ignored) {
                 }
             }
@@ -233,8 +235,8 @@ public class Ui12Proxy extends MaxObject {
      */
     private boolean isReachable(final InetSocketAddress inetSocketAddress) {
         try {
-            try (final Socket soc = new Socket()) {
-                soc.connect(inetSocketAddress, 3000);
+            try (Socket soc = new Socket()) {
+                soc.connect(inetSocketAddress, PING_TIMEOUT);
             }
             return true;
         } catch (IOException ex) {

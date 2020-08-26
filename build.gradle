@@ -1,6 +1,7 @@
 plugins {
     id 'java-library'
     id 'idea'
+    id 'checkstyle'
 }
 
 java {
@@ -51,6 +52,6 @@ test {
 
     // listen to standard out and standard error of the test JVM(s)
     onOutput { descriptor, event ->
-        logger.lifecycle("Test: " + descriptor + " produced standard out/err: " + event.message )
+        logger.lifecycle("Test: " + descriptor + " produced standard out/err: " + event.message)
     }
 }
