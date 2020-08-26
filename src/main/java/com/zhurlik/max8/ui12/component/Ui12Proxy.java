@@ -7,14 +7,13 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.io.IOException;
-import java.net.InetAddress;
+import java.net.InetSocketAddress;
+import java.net.Socket;
 import java.net.URI;
 import java.util.Arrays;
 import java.util.concurrent.Executor;
 import java.util.concurrent.Executors;
 import java.util.concurrent.TimeUnit;
-
-import static java.net.InetAddress.getByName;
 
 /**
  * Max8 component for working with Ui12 device via WebSocket connection.
@@ -213,21 +212,34 @@ public class Ui12Proxy extends MaxObject {
      * @return true when Ui12 Device is available in the network
      */
     private boolean isHostAvailable() {
-        final InetAddress address = getInetAddress();
+        final InetSocketAddress address = getInetSocketAddress();
         if (address != null) {
-            try {
-                final boolean reachable = address.isReachable(5000);
-                if (!reachable) { // no network
-                    sendStatus(ui12WebSocket == null ? Status.NOT_CONNECTED_YET : Status.NETWORK_DOWN);
-                } else { // has network
-                    sendStatus(ui12WebSocket == null ? Status.NOT_CONNECTED_YET : Status.NETWORK_UP);
-                }
-                return reachable;
-            } catch (IOException e) {
-                LOG.debug(">> Error:", e);
+            final boolean reachable = isReachable(address);
+            if (!reachable) { // no network
+                sendStatus(ui12WebSocket == null ? Status.NOT_CONNECTED_YET : Status.NETWORK_DOWN);
+            } else { // has network
+                sendStatus(ui12WebSocket == null ? Status.NOT_CONNECTED_YET : Status.NETWORK_UP);
             }
+            return reachable;
         }
         return false;
+    }
+
+    /**
+     * Platform independent ping.
+     *
+     * @param inetSocketAddress host and port
+     * @return true when the host pings
+     */
+    private boolean isReachable(final InetSocketAddress inetSocketAddress) {
+        try {
+            try (final Socket soc = new Socket()) {
+                soc.connect(inetSocketAddress, 3000);
+            }
+            return true;
+        } catch (IOException ex) {
+            return false;
+        }
     }
 
     /**
@@ -235,7 +247,7 @@ public class Ui12Proxy extends MaxObject {
      *
      * @return either null or Ui12 Device inet address
      */
-    private InetAddress getInetAddress() {
+    private InetSocketAddress getInetSocketAddress() {
         if (url == null) {
             LOG.warn(">> Enter please url in format <server:port> to be able to get Ui12 device");
             sendStatus(Status.NOT_CONNECTED_YET);
@@ -244,7 +256,8 @@ public class Ui12Proxy extends MaxObject {
 
         try {
             final String host = url.split(":")[0];
-            return getByName(host);
+            final int port = Integer.parseInt(url.split(":")[1]);
+            return new InetSocketAddress(host, port);
         } catch (Exception e) {
             LOG.error(">> Error:", e);
             sendStatus(Status.CLOSED);
