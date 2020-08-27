@@ -18,7 +18,7 @@ import java.util.List;
  */
 public abstract class Ui12WebSocket extends WebSocketClient {
     private static final Logger LOG = LoggerFactory.getLogger(Ui12WebSocket.class);
-    private Instant startSession;
+    private Instant startSession = Instant.now();
 
     /**
      * Constructor by URI.
