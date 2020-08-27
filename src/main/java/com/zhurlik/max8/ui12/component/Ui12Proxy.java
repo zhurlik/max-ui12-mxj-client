@@ -169,7 +169,9 @@ public class Ui12Proxy extends MaxObject {
             ui12WebSocket = new Ui12WebSocket(new URI(endpoint)) {
 
                 /**
-                 * Note that multi-line message will be split into  multiple messages.
+                 * A multi-line message will be split into multiple messages.
+                 *
+                 * NOTE: there are a few custom replacements of the original message.
                  *
                  * @param message incoming message via WebSocket
                  */
@@ -179,6 +181,8 @@ public class Ui12Proxy extends MaxObject {
                     Arrays.stream(message.split("\n"))
                             // replace '^' -> ' '
                             .map(s -> s.replaceAll("\\^", " "))
+                            // trick with last space
+                            .map(s -> s.replaceAll(" $", " \" \""))
                             // sending to the corresponded outlet
                             .forEach(s -> outlet(0, new String[]{s}));
                 }
