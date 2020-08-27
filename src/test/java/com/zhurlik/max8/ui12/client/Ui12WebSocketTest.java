@@ -15,6 +15,7 @@ import java.util.concurrent.LinkedBlockingQueue;
 import java.util.concurrent.TimeUnit;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertThrows;
 
 /**
  * A simple test to check {@link Ui12WebSocket} client.
@@ -66,6 +67,21 @@ class Ui12WebSocketTest {
     void testHandleMessage() throws Exception {
         server.broadcast("test");
         assertEquals("test", messages.take());
+    }
+
+    @Test
+    void testOnError() {
+        testClient.onError(null);
+    }
+
+    @Test
+    void testOnOpen() {
+        assertThrows(NullPointerException.class, () -> testClient.onOpen(null));
+    }
+
+    @Test
+    void testOnClose() {
+        testClient.onClose(1, "test", true);
     }
 
     /**
