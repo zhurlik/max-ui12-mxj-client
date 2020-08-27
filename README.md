@@ -1,3 +1,4 @@
+![Java CI with Gradle](https://github.com/zhurlik/max-ui12-mxj-client/workflows/Java%20CI%20with%20Gradle/badge.svg)
 # max-ui12-mxj-client
 The Java based component for working with [Ui12 mixer](https://www.soundcraft.com/en/products/ui12) in the [Max8](https://cycling74.com/).
 
