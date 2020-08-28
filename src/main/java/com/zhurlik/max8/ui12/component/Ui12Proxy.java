@@ -6,13 +6,9 @@ import com.zhurlik.max8.ui12.client.Ui12WebSocket;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import java.io.IOException;
 import java.net.InetSocketAddress;
-import java.net.Socket;
 import java.net.URI;
 import java.util.Arrays;
-import java.util.concurrent.Executor;
-import java.util.concurrent.Executors;
 import java.util.concurrent.TimeUnit;
 
 /**
@@ -21,18 +17,8 @@ import java.util.concurrent.TimeUnit;
  *
  * @author zhurlik@gmail.com
  */
-public class Ui12Proxy extends MaxObject {
+public class Ui12Proxy extends MaxObject implements IUi12Proxy {
     private static final Logger LOG = LoggerFactory.getLogger(Ui12Proxy.class);
-    private static final String[] INLET_ASSIST = new String[]{"Input"};
-    private static final String[] OUTLET_ASSIST = new String[]{"Output"};
-
-    // a single thread to check network status.
-    private static final Executor EXECUTOR = Executors.newSingleThreadExecutor();
-
-    // Timeouts
-    private static final int PING_TIMEOUT = 3000;
-    private static final int FIVE = 5;
-    private static final int TEN = 10;
 
     // the client for connecting to the WebSocket server on the Ui12 device.
     private Ui12WebSocket ui12WebSocket;
@@ -232,23 +218,6 @@ public class Ui12Proxy extends MaxObject {
     }
 
     /**
-     * Platform independent ping.
-     *
-     * @param inetSocketAddress host and port
-     * @return true when the host pings
-     */
-    private boolean isReachable(final InetSocketAddress inetSocketAddress) {
-        try {
-            try (Socket soc = new Socket()) {
-                soc.connect(inetSocketAddress, PING_TIMEOUT);
-            }
-            return true;
-        } catch (IOException ex) {
-            return false;
-        }
-    }
-
-    /**
      * We need to have InetAddress to be able to check the network connection.
      *
      * @return either null or Ui12 Device inet address
@@ -304,19 +273,5 @@ public class Ui12Proxy extends MaxObject {
         }
 
         sendStatus(Status.NOT_CONNECTED_YET);
-    }
-
-    /**
-     * Internal statuses about the WebSocket connection and the network state.
-     */
-    private enum Status {
-        // websocket
-        NOT_CONNECTED_YET,
-        CONNECTED,
-        CLOSED,
-        RECONNECTED,
-        // network
-        NETWORK_UP,
-        NETWORK_DOWN;
     }
 }
