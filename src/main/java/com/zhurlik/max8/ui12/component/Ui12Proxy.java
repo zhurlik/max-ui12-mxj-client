@@ -3,13 +3,9 @@ package com.zhurlik.max8.ui12.component;
 import com.cycling74.max.Atom;
 import com.cycling74.max.MaxObject;
 import com.zhurlik.max8.ui12.client.Ui12WebSocket;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
-import java.net.InetSocketAddress;
 import java.net.URI;
 import java.util.Arrays;
-import java.util.concurrent.TimeUnit;
 
 /**
  * Max8 component for working with Ui12 device via WebSocket connection.
@@ -18,7 +14,6 @@ import java.util.concurrent.TimeUnit;
  * @author zhurlik@gmail.com
  */
 public class Ui12Proxy extends MaxObject implements IUi12Proxy {
-    private static final Logger LOG = LoggerFactory.getLogger(Ui12Proxy.class);
 
     // the client for connecting to the WebSocket server on the Ui12 device.
     private Ui12WebSocket ui12WebSocket;
@@ -183,73 +178,21 @@ public class Ui12Proxy extends MaxObject implements IUi12Proxy {
         }
     }
 
-    /**
-     * Begins the process in the background for checking the host and the network.
-     */
-    private void ping() {
-        EXECUTOR.execute(() -> {
-            while (url != null) {
-                final boolean reachable = isHostAvailable();
-                try {
-                    TimeUnit.SECONDS.sleep((reachable) ? TEN : FIVE);
-                } catch (InterruptedException ignored) {
-                }
-            }
-        });
-    }
-
-    /**
-     * Checks if the host is available in the network.
-     *
-     * @return true when Ui12 Device is available in the network
-     */
-    private boolean isHostAvailable() {
-        final InetSocketAddress address = getInetSocketAddress();
-        if (address != null) {
-            final boolean reachable = isReachable(address);
-            if (!reachable) { // no network
-                sendStatus(ui12WebSocket == null ? Status.NOT_CONNECTED_YET : Status.NETWORK_DOWN);
-            } else { // has network
-                sendStatus(ui12WebSocket == null ? Status.NOT_CONNECTED_YET : Status.NETWORK_UP);
-            }
-            return reachable;
-        }
-        return false;
-    }
-
-    /**
-     * We need to have InetAddress to be able to check the network connection.
-     *
-     * @return either null or Ui12 Device inet address
-     */
-    private InetSocketAddress getInetSocketAddress() {
-        if (url == null) {
-            LOG.warn(">> Enter please url in format <server:port> to be able to get Ui12 device");
-            sendStatus(Status.NOT_CONNECTED_YET);
-            return null;
-        }
-
-        try {
-            final String host = url.split(":")[0];
-            final int port = Integer.parseInt(url.split(":")[1]);
-            return new InetSocketAddress(host, port);
-        } catch (Exception e) {
-            LOG.error(">> Error:", e);
-            sendStatus(Status.CLOSED);
-        }
-
-        return null;
-    }
-
-    /**
-     * Sends to the outlet the message about WebSocket/network connections status.
-     *
-     * @param status one of the {@link Status}
-     */
-    private void sendStatus(final Status status) {
+    @Override
+    public void sendStatus(final Status status) {
         outlet(0, new String[]{
                 String.format("STATUS: %s", status.name())
         });
+    }
+
+    @Override
+    public Ui12WebSocket getUi12WebSocket() {
+        return ui12WebSocket;
+    }
+
+    @Override
+    public String getUrl() {
+        return url;
     }
 
     /**
