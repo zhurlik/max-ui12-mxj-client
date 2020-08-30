@@ -11,8 +11,6 @@ import java.util.Arrays;
  * Max8 component for working with Ui12 device via WebSocket connection.
  * The main idea to read/send messages and to check connection with WebSocket Server on the Ui12 device.
  *
- * Note: most of the logic has been moved to the default methods in the {@link IUi12Proxy}.
- *
  * @author zhurlik@gmail.com
  */
 public class Ui12Proxy extends MaxObject implements IUi12Proxy {
@@ -20,8 +18,7 @@ public class Ui12Proxy extends MaxObject implements IUi12Proxy {
     // the client for connecting to the WebSocket server on the Ui12 device.
     private Ui12WebSocket ui12WebSocket;
 
-    // expected <server:port>
-    private String url;
+    private Scanner scanner;
 
     /**
      * Builds the Max8 component.
@@ -66,7 +63,7 @@ public class Ui12Proxy extends MaxObject implements IUi12Proxy {
 
     @Override
     public Ui12WebSocket buildWebSocketClient() throws Exception {
-        final String endpoint = String.format("ws://%s/socket.io/1/websocket/", getUrl());
+        final String endpoint = String.format("ws://%s/socket.io/1/websocket/", getServerScanner());
         LOG.info(">> Endpoint: {}", endpoint);
 
         return new Ui12WebSocket(new URI(endpoint)) {
@@ -98,17 +95,12 @@ public class Ui12Proxy extends MaxObject implements IUi12Proxy {
     }
 
     @Override
-    public String getUrl() {
-        return url;
+    public Scanner getServerScanner() {
+        return scanner;
     }
 
     @Override
     public void setUi12WebSocket(final Ui12WebSocket ui12WebSocket) {
         this.ui12WebSocket = ui12WebSocket;
-    }
-
-    @Override
-    public void setUrl(final String url) {
-        this.url = url;
     }
 }

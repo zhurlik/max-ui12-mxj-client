@@ -1,26 +1,21 @@
 package com.zhurlik.max8.ui12.component;
 
+import com.cycling74.max.Atom;
 import com.zhurlik.max8.ui12.client.Ui12WebSocket;
+import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
-import java.net.InetSocketAddress;
 import java.net.URI;
-import java.util.Arrays;
-import java.util.concurrent.TimeUnit;
-import java.util.stream.Collectors;
+import java.net.URISyntaxException;
 
-import static com.zhurlik.max8.ui12.component.IUi12Proxy.FIVE;
-import static com.zhurlik.max8.ui12.component.IUi12Proxy.TEN;
-import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.mockito.ArgumentMatchers.any;
-import static org.mockito.Mockito.atLeast;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.reset;
 import static org.mockito.Mockito.spy;
+import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 
 /**
@@ -30,8 +25,8 @@ import static org.mockito.Mockito.verify;
  */
 class IUi12ProxyTest {
 
-    private String url;
     private Ui12WebSocket ui12WebSocket;
+    private Scanner scanner;
 
     private IUi12Proxy test = spy(new IUi12Proxy() {
         @Override
@@ -40,176 +35,155 @@ class IUi12ProxyTest {
         }
 
         @Override
-        public String getUrl() {
-            return url;
+        public Scanner getServerScanner() {
+            return scanner;
+        }
+
+        @Override
+        public Ui12WebSocket buildWebSocketClient() throws URISyntaxException {
+            return null;
+        }
+
+        @Override
+        public void setUi12WebSocket(final Ui12WebSocket ui12WebSocket) {
+
         }
     });
 
     @BeforeEach
     void setUp() {
-        url = null;
         ui12WebSocket = null;
     }
 
+    @AfterEach
+    void tearDown() {
+        reset(test);
+    }
+
+
     @Test
-    void testGetInetSocketAddress() {
-        // Given
-        url = null;
-
-        // When
-        final InetSocketAddress address = test.getInetSocketAddress();
-
-        // Then
-        assertNull(address);
-        verify(test).sendStatus(IUi12Proxy.Status.NOT_CONNECTED_YET);
+    void testActionIntNothing() {
+        test.action(-1);
+        verify(test, never()).sendStatus(any(Status.class));
     }
 
     @Test
-    void testGetInetSocketAddressNoPort() {
+    void testActionIntStopNoUrl() {
         // Given
-        url = "host";
-
         // When
-        final InetSocketAddress address = test.getInetSocketAddress();
+        test.action(0);
 
         // Then
-        assertNull(address);
-        verify(test).sendStatus(IUi12Proxy.Status.NOT_CONNECTED_YET);
+        assertNull(test.getUi12WebSocket());
+        verify(test).sendStatus(Status.NOT_CONNECTED_YET);
     }
 
     @Test
-    void testGetInetSocketAddressBlankPort() {
+    void testActionIntStartNoUrl() {
         // Given
-        url = "host:";
-
+        scanner = null;
         // When
-        final InetSocketAddress address = test.getInetSocketAddress();
+        test.action(1);
 
         // Then
-        assertNull(address);
-        verify(test).sendStatus(IUi12Proxy.Status.NOT_CONNECTED_YET);
+        assertNull(test.getUi12WebSocket());
+        verify(test).sendStatus(Status.NOT_CONNECTED_YET);
     }
 
     @Test
-    void testGetInetSocketAddressBothBlankHostAndPort() {
+    void testActionIntStopWrongUrl() {
         // Given
-        url = ":";
+        scanner = new Scanner(new Atom[]{Atom.newAtom("bad:port")}, test::sendStatus);
 
         // When
-        final InetSocketAddress address = test.getInetSocketAddress();
+        test.action(0);
 
         // Then
-        assertNull(address);
-        verify(test).sendStatus(IUi12Proxy.Status.NOT_CONNECTED_YET);
+        assertNull(test.getUi12WebSocket());
+        verify(test, times(2)).sendStatus(Status.NOT_CONNECTED_YET);
     }
 
     @Test
-    void testGetInetSocketAddressEmpty() {
+    void testActionIntStartWrongUrl() {
         // Given
-        url = "";
+        scanner = new Scanner(new Atom[]{Atom.newAtom("bad:port")}, test::sendStatus);
 
         // When
-        final InetSocketAddress address = test.getInetSocketAddress();
+        test.action(1);
 
         // Then
-        assertNull(address);
-        verify(test).sendStatus(IUi12Proxy.Status.NOT_CONNECTED_YET);
+        assertNull(test.getUi12WebSocket());
+        verify(test).sendStatus(Status.NOT_CONNECTED_YET);
     }
 
     @Test
-    void testGetInetSocketAddressHostAndWrongPort() {
+    void testActionIntStopLocalHost() {
         // Given
-        url = "localhost:wrong";
+        scanner = new Scanner(new Atom[]{Atom.newAtom("localhost:1234")}, test::sendStatus);
 
         // When
-        final InetSocketAddress address = test.getInetSocketAddress();
+        test.action(0);
 
         // Then
-        assertNull(address);
-        verify(test).sendStatus(IUi12Proxy.Status.CLOSED);
+        assertNull(test.getUi12WebSocket());
+        verify(test, times(2)).sendStatus(Status.NOT_CONNECTED_YET);
     }
 
     @Test
-    void testGetInetSocketAddressHostAndPort() {
+    void testActionIntStartLocalHost() {
         // Given
-        url = "localhost:1234";
+        scanner = new Scanner(new Atom[]{Atom.newAtom("localhost:1234")}, test::sendStatus);
 
         // When
-        final InetSocketAddress address = test.getInetSocketAddress();
+        test.action(1);
 
         // Then
-        assertNotNull(address);
-        assertEquals("localhost/127.0.0.1:1234", address.toString());
-        verify(test, never()).sendStatus(any(IUi12Proxy.Status.class));
+        assertNull(test.getUi12WebSocket());
+        verify(test).sendStatus(any(Status.class));
     }
 
     @Test
-    void testIsHostAvailableNotConnectedYet() {
+    void testActionIntStopWebSocket() throws Exception {
         // Given
-        url = "localhost:1234";
-
-        // When
-        final boolean res = test.isHostAvailable();
-
-        // Then
-        assertFalse(res);
-        verify(test).sendStatus(IUi12Proxy.Status.NOT_CONNECTED_YET);
-    }
-
-    @Test
-    void testIsHostAvailable() throws Exception {
-        // Given
-        url = "localhost:1234";
+        scanner = new Scanner(new Atom[]{Atom.newAtom("localhost:1234")}, test::sendStatus);
         ui12WebSocket = new Ui12WebSocket(new URI("ws://localhost:1234")) {
             @Override
             protected void handle(final String message) {
+
             }
         };
 
         // When
-        final boolean res = test.isHostAvailable();
+        test.action(0);
 
         // Then
-        assertFalse(res);
-        verify(test).sendStatus(IUi12Proxy.Status.NETWORK_DOWN);
+        assertNotNull(test.getUi12WebSocket());
+        verify(test).sendStatus(Status.NOT_CONNECTED_YET);
     }
 
     @Test
-    void testIsReachableWhenNull() {
-        assertFalse(test.isReachable(null));
+    void testActionIntStopOpenWebSocket() throws Exception {
+        // Given
+        scanner = new Scanner(new Atom[]{Atom.newAtom("localhost:1234")}, test::sendStatus);
+        ui12WebSocket = new Ui12WebSocket(new URI("ws://localhost:1234")) {
+            @Override
+            protected void handle(final String message) {
+
+            }
+        };
+
+        // When
+        ui12WebSocket.connect();
+        test.action(0);
+
+        // Then
+        assertNotNull(test.getUi12WebSocket());
+        verify(test).sendStatus(Status.NOT_CONNECTED_YET);
+        verify(test).sendStatus(Status.CLOSED);
     }
 
     @Test
-    void testIsReachableFakeHost() {
-        assertFalse(test.isReachable(new InetSocketAddress("fake-host", 1)));
-    }
-
-    @Test
-    void testIsReachableFakePort() {
-        assertFalse(test.isReachable(new InetSocketAddress("localhost", 1)));
-    }
-
-    @Test
-    void testStatus() {
-        assertEquals("NOT_CONNECTED_YET,CONNECTED,CLOSED,RECONNECTED,NETWORK_UP,NETWORK_DOWN",
-                Arrays.stream(IUi12Proxy.Status.values()).map(Enum::name).collect(Collectors.joining(",")));
-    }
-
-    @Test
-    void testPingNothing() throws Exception {
-        test.ping();
-        TimeUnit.SECONDS.sleep(FIVE);
-
-        verify(test, never()).sendStatus(any(IUi12Proxy.Status.class));
-    }
-
-    @Test
-    void testPingLocalHost() throws Exception {
-        reset(test);
-        url = "localhost:1234";
-        test.ping();
-        TimeUnit.SECONDS.sleep(TEN);
-
-        verify(test, atLeast(2)).sendStatus(IUi12Proxy.Status.NOT_CONNECTED_YET);
+    void testDefineUrlNull() {
+        test.defineUrl(null);
     }
 }
