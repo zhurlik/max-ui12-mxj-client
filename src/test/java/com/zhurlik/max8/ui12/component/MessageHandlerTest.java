@@ -9,8 +9,12 @@ import java.util.function.Consumer;
 
 import static org.junit.jupiter.api.Assertions.assertArrayEquals;
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
+/**
+ * @author zhurlik@gmail.com
+ */
 class MessageHandlerTest {
     private MessageHandler test;
 
@@ -27,6 +31,7 @@ class MessageHandlerTest {
     void testNull() {
         test.accept(null);
         assertTrue(output.isEmpty());
+        assertNotNull(test.getOutlet());
     }
 
     @Test
