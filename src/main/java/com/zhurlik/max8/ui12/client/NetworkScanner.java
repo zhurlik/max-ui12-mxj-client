@@ -17,7 +17,7 @@ import java.util.function.Consumer;
  *
  * @author zhurlik@gamil.com
  */
-public final class NetworkScanner {
+public class NetworkScanner {
     private static final Logger LOG = LoggerFactory.getLogger("Ui12Proxy");
 
     /**

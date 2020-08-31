@@ -8,7 +8,7 @@ import java.util.function.Consumer;
  *
  * @author zhurlik@gmail.com
  */
-public final class MessageHandler implements Consumer<String> {
+public class MessageHandler implements Consumer<String> {
 
     /**
      * For forwarding to the outlet.

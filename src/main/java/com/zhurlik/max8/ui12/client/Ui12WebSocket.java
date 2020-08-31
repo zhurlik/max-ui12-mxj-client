@@ -23,7 +23,7 @@ import static com.zhurlik.max8.ui12.client.NetworkScanner.FIVE;
  *
  * @author zhurlik@gmail.com
  */
-public final class Ui12WebSocket extends WebSocketClient {
+public class Ui12WebSocket extends WebSocketClient {
     private static final Logger LOG = LoggerFactory.getLogger("Ui12Proxy");
     private Instant startSession = Instant.now();
     private final MessageHandler handler;

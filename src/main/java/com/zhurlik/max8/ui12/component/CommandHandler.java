@@ -11,7 +11,7 @@ import java.util.function.Consumer;
 /**
  * @author zhurlik@gmail.com
  */
-public final class CommandHandler {
+public class CommandHandler {
     private static final Logger LOG = LoggerFactory.getLogger("Ui12Proxy");
 
     /**
@@ -30,6 +30,7 @@ public final class CommandHandler {
 
     /**
      * Executes one of the following actions: START or STOP.
+     * See {@link com.cycling74.max.MaxObject#inlet(int)}
      *
      * @param value expected signal either 0 or 1
      */
@@ -87,7 +88,7 @@ public final class CommandHandler {
      * Executes one of the following actions: START or STOP.
      *
      * @param message either url or msg
-     * @param args
+     * @param args see {@link com.cycling74.max.MaxObject#anything(String, Atom[])}
      */
     void action(final String message, final Atom[] args) {
         final Command command = Command.findBy(message);
@@ -101,7 +102,6 @@ public final class CommandHandler {
                 break;
             default:
         }
-
     }
 
     /**

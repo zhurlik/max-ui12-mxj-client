@@ -8,7 +8,7 @@ import java.net.URI;
 import java.net.URISyntaxException;
 import java.util.Optional;
 
-public final class UrlHandler {
+public class UrlHandler {
     private static final Logger LOG = LoggerFactory.getLogger("Ui12Proxy");
 
     private String host = "";
@@ -76,7 +76,7 @@ public final class UrlHandler {
         return !host.isEmpty() && port != -1;
     }
 
-    URI getURI() throws URISyntaxException {
+    final URI getURI() throws URISyntaxException {
         final String url = isValidUrl() ? String.format("ws://%s:%d/socket.io/1/websocket/", host, port) : "";
         LOG.info(">> Endpoint: {}", url);
         return new URI(url);
