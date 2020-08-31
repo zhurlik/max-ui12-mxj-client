@@ -91,7 +91,7 @@ public final class NetworkScanner {
     }
 
     /**
-     * NOTE: that's background process.
+     * NOTE: that's a background process.
      */
     void ping() {
         EXECUTOR.execute(() -> {
@@ -106,7 +106,7 @@ public final class NetworkScanner {
     }
 
     /**
-     * Stops the beackground process for checking the network.
+     * Stops the process in the background for checking the network.
      */
     void stopPing() {
         stop.set(false);

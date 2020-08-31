@@ -40,7 +40,8 @@ public final class Ui12WebSocket extends WebSocketClient {
         this.handler = (handler == null) ? new MessageHandler((strings -> {
 
         })) : handler;
-        network = new NetworkScanner(new InetSocketAddress(serverUri.getHost(), serverUri.getPort()), handler.getOutlet());
+        network = new NetworkScanner(new InetSocketAddress(serverUri.getHost(), serverUri.getPort()),
+                this.handler.getOutlet());
     }
 
     /**
