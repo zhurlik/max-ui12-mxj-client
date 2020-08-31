@@ -148,8 +148,9 @@ public final class Ui12WebSocket extends WebSocketClient {
 
 
     /**
+     * Send the Max8 message to Ui12 device.
      *
-     * @param args
+     * @param args see {@link com.cycling74.max.MaxObject#anything(String, Atom[])}
      */
     public void toUi12Device(final Atom[] args) {
         if (!network.isHostAvailable()) {
