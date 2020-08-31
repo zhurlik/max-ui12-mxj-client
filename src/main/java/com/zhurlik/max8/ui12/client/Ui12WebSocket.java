@@ -1,5 +1,6 @@
 package com.zhurlik.max8.ui12.client;
 
+import com.cycling74.max.Atom;
 import com.zhurlik.max8.ui12.component.MessageHandler;
 import com.zhurlik.max8.ui12.component.Status;
 import org.java_websocket.client.WebSocketClient;
@@ -7,11 +8,15 @@ import org.java_websocket.handshake.ServerHandshake;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import java.net.InetSocketAddress;
 import java.net.URI;
 import java.time.Duration;
 import java.time.Instant;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.concurrent.TimeUnit;
+
+import static com.zhurlik.max8.ui12.client.NetworkScanner.FIVE;
 
 /**
  * A simple wrapper of WebSocket client for communicating with UI12 device.
@@ -19,9 +24,10 @@ import java.util.List;
  * @author zhurlik@gmail.com
  */
 public final class Ui12WebSocket extends WebSocketClient {
-    private static final Logger LOG = LoggerFactory.getLogger(Ui12WebSocket.class);
+    private static final Logger LOG = LoggerFactory.getLogger("Ui12Proxy");
     private Instant startSession = Instant.now();
     private final MessageHandler handler;
+    private final NetworkScanner network;
 
     /**
      * Constructor by URI.
@@ -31,7 +37,10 @@ public final class Ui12WebSocket extends WebSocketClient {
      */
     public Ui12WebSocket(final URI serverUri, final MessageHandler handler) {
         super(serverUri);
-        this.handler = (handler == null) ? new MessageHandler((strings -> {})) : handler;
+        this.handler = (handler == null) ? new MessageHandler((strings -> {
+
+        })) : handler;
+        network = new NetworkScanner(new InetSocketAddress(serverUri.getHost(), serverUri.getPort()), handler.getOutlet());
     }
 
     /**
@@ -81,6 +90,10 @@ public final class Ui12WebSocket extends WebSocketClient {
         // disconnected
         handler.getOutlet()
                 .accept(Status.CLOSED.convert());
+
+        if (network != null) {
+            network.stopPing();
+        }
     }
 
     /**
@@ -95,5 +108,57 @@ public final class Ui12WebSocket extends WebSocketClient {
         handler.getOutlet()
                 .accept(Status.CLOSED.convert());
 
+    }
+
+    /**
+     * Makes the connection with Ui12 via WebSocket and binds the handler for reading incoming messages.
+     */
+    public void up() {
+        if (!network.isHostAvailable()) {
+            return;
+        }
+
+        try {
+            connectBlocking();
+            network.ping();
+        } catch (Exception e) {
+            LOG.error(">> Error:", e);
+            handler.getOutlet().accept(Status.NOT_CONNECTED_YET.convert());
+        }
+    }
+
+    /**
+     * Closes the connection with Ui12 device.
+     */
+    public void down() {
+        if (!network.isHostAvailable()) {
+            return;
+        }
+
+        try {
+            close();
+            TimeUnit.SECONDS.sleep(FIVE);
+            network.stopPing();
+        } catch (InterruptedException e) {
+            LOG.error(">> Error:", e);
+        }
+        handler.getOutlet().accept(Status.CLOSED.convert());
+    }
+
+
+    /**
+     *
+     * @param args
+     */
+    public void toUi12Device(final Atom[] args) {
+        if (!network.isHostAvailable()) {
+            return;
+        }
+
+        if (args != null && args.length == 1) {
+            final String message = args[0].getString();
+            LOG.debug(">> Sending: {}", message);
+            send(message);
+        }
     }
 }

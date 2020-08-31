@@ -11,11 +11,16 @@ import java.util.function.Consumer;
 public final class MessageHandler implements Consumer<String> {
 
     /**
-     * To be able to forward the messages to the outlet.
+     * For forwarding to the outlet.
      * See {@link com.cycling74.max.MaxObject#outlet(int, String[])}
      */
     private final Consumer<String[]> toOutlet;
 
+    /**
+     * A constructor.
+     *
+     * @param toOutlet reference to the outlet method. see {@link com.cycling74.max.MaxObject#outlet(int, String[])}
+     */
     public MessageHandler(final Consumer<String[]> toOutlet) {
         this.toOutlet = toOutlet;
     }
@@ -43,8 +48,7 @@ public final class MessageHandler implements Consumer<String> {
     }
 
     /**
-     * Output channel.
-     * See {@link com.cycling74.max.MaxObject#outlet(int, String[])}
+     * Output channel. See {@link com.cycling74.max.MaxObject#outlet(int, String[])}
      *
      * @return a function for forwarding the messages to the outlet
      */

@@ -2,10 +2,8 @@ package com.zhurlik.max8.ui12.component;
 
 import com.cycling74.max.Atom;
 import com.cycling74.max.MaxObject;
-import com.zhurlik.max8.ui12.client.Ui12WebSocket;
-
-import java.net.URI;
-import java.util.Arrays;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 /**
  * Max8 component for working with Ui12 device via WebSocket connection.
@@ -13,12 +11,23 @@ import java.util.Arrays;
  *
  * @author zhurlik@gmail.com
  */
-public class Ui12Proxy extends MaxObject implements IUi12Proxy {
+public final class Ui12Proxy extends MaxObject {
+    /**
+     * Logger.
+     */
+    private static final Logger LOG = LoggerFactory.getLogger("Ui12Proxy");
 
-    // the client for connecting to the WebSocket server on the Ui12 device.
-    private Ui12WebSocket ui12WebSocket;
+    /**
+     * Inlet label.
+     */
+    private static final String[] INLET_ASSIST = new String[]{"Input"};
 
-    private Scanner scanner;
+    /**
+     * Outlet label.
+     */
+    private static final String[] OUTLET_ASSIST = new String[]{"Output"};
+
+    private final CommandHandler commandHandler;
 
     /**
      * Builds the Max8 component.
@@ -28,6 +37,7 @@ public class Ui12Proxy extends MaxObject implements IUi12Proxy {
         declareIO(1, 1);
         setInletAssist(INLET_ASSIST);
         setOutletAssist(OUTLET_ASSIST);
+        commandHandler = new CommandHandler((strings) -> outlet(0, strings), new UrlHandler());
     }
 
     /**
@@ -39,7 +49,7 @@ public class Ui12Proxy extends MaxObject implements IUi12Proxy {
     @Override
     protected void anything(final String message, final Atom[] args) {
         LOG.debug(">> Max8 signal: message = {}, args = {}", message, Atom.toDebugString(args));
-        action(message, args);
+        commandHandler.action(message, args);
     }
 
     /**
@@ -51,56 +61,6 @@ public class Ui12Proxy extends MaxObject implements IUi12Proxy {
     protected void inlet(final int value) {
         LOG.debug(">> Max8 signal: value = {}", value);
         LOG.debug(">> Inlet:{}", getInlet());
-        action(value);
-    }
-
-    @Override
-    public void sendStatus(final Status status) {
-        outlet(0, new String[]{
-                String.format("STATUS: %s", status.name())
-        });
-    }
-
-    @Override
-    public Ui12WebSocket buildWebSocketClient() throws Exception {
-        final String endpoint = String.format("ws://%s/socket.io/1/websocket/", getServerScanner());
-        LOG.info(">> Endpoint: {}", endpoint);
-
-        return new Ui12WebSocket(new URI(endpoint)) {
-
-            /**
-             * A multi-line message will be split into multiple messages.
-             *
-             * NOTE: there are a few custom replacements of the original message.
-             *
-             * @param message incoming message via WebSocket
-             */
-            @Override
-            protected void handle(final String message) {
-                // split by '\n'
-                Arrays.stream(message.split("\n"))
-                        // replace '^' -> ' '
-                        .map(s -> s.replaceAll("\\^", " "))
-                        // trick with last space
-                        .map(s -> s.replaceAll(" $", " \" \""))
-                        // sending to the corresponded outlet
-                        .forEach(s -> outlet(0, new String[]{s}));
-            }
-        };
-    }
-
-    @Override
-    public Ui12WebSocket getUi12WebSocket() {
-        return ui12WebSocket;
-    }
-
-    @Override
-    public Scanner getServerScanner() {
-        return scanner;
-    }
-
-    @Override
-    public void setUi12WebSocket(final Ui12WebSocket ui12WebSocket) {
-        this.ui12WebSocket = ui12WebSocket;
+        commandHandler.action(value);
     }
 }

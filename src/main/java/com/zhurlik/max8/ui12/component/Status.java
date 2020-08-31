@@ -32,4 +32,16 @@ public enum Status {
      * When the network is down.
      */
     NETWORK_DOWN;
+
+    /**
+     * That's needed for sending to the outlet.
+     * See {@link com.cycling74.max.MaxObject#outlet(int, String[])}
+     *
+     * @return required format for the outlet
+     */
+    public String[] convert() {
+        return new String[]{
+                String.format("STATUS: %s", name())
+        };
+    }
 }
