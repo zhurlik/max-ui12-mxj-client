@@ -4,8 +4,6 @@ import com.zhurlik.max8.ui12.component.MessageHandler;
 import org.java_websocket.handshake.HandshakeImpl1Server;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
-import org.junit.jupiter.api.extension.ExtendWith;
-import org.mockito.junit.jupiter.MockitoExtension;
 
 import java.net.URI;
 
@@ -18,7 +16,6 @@ import static org.junit.jupiter.api.Assertions.assertThrows;
  *
  * @author zhurlik@gmail.com
  */
-@ExtendWith(MockitoExtension.class)
 class Ui12WebSocketTest {
 
     private Ui12WebSocket testClient;
