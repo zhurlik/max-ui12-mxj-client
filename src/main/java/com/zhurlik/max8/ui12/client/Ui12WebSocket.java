@@ -1,5 +1,7 @@
 package com.zhurlik.max8.ui12.client;
 
+import com.zhurlik.max8.ui12.component.MessageHandler;
+import com.zhurlik.max8.ui12.component.Status;
 import org.java_websocket.client.WebSocketClient;
 import org.java_websocket.handshake.ServerHandshake;
 import org.slf4j.Logger;
@@ -16,17 +18,20 @@ import java.util.List;
  *
  * @author zhurlik@gmail.com
  */
-public abstract class Ui12WebSocket extends WebSocketClient {
+public final class Ui12WebSocket extends WebSocketClient {
     private static final Logger LOG = LoggerFactory.getLogger(Ui12WebSocket.class);
     private Instant startSession = Instant.now();
+    private final MessageHandler handler;
 
     /**
      * Constructor by URI.
      *
      * @param serverUri WebSocket server
+     * @param handler for handling the incoming messages
      */
-    public Ui12WebSocket(final URI serverUri) {
+    public Ui12WebSocket(final URI serverUri, final MessageHandler handler) {
         super(serverUri);
+        this.handler = (handler == null) ? new MessageHandler((strings -> {})) : handler;
     }
 
     /**
@@ -50,24 +55,20 @@ public abstract class Ui12WebSocket extends WebSocketClient {
                     headers.toString()
             );
         }
+
+        // connected
+        handler.getOutlet()
+                .accept(Status.CONNECTED.convert());
     }
 
     @Override
     public void onMessage(final String message) {
         LOG.debug(">> Incoming message: {}", message);
-        handle(message);
+        handler.accept(message);
     }
 
     /**
-     * To be able to pass incomeing message to Max8 component.
-     *
-     * @param message a websocket message
-     */
-    protected abstract void handle(String message);
-
-    /**
-     *
-     * @param code an error code, see {@link org.java_websocket.framing.CloseFrame}
+     * @param code   an error code, see {@link org.java_websocket.framing.CloseFrame}
      * @param reason some additional details
      * @param remote Returns whether or not the closing of the connection was initiated by the remote host.
      */
@@ -76,6 +77,10 @@ public abstract class Ui12WebSocket extends WebSocketClient {
         LOG.warn(">> WebSocket connection has been closed.");
         LOG.debug(">> Server response: code = {}, reason = {}, remote = {}", code, reason, remote);
         LOG.debug(">> Session time: {}", Duration.between(startSession, Instant.now()).toMillis());
+
+        // disconnected
+        handler.getOutlet()
+                .accept(Status.CLOSED.convert());
     }
 
     /**
@@ -86,5 +91,9 @@ public abstract class Ui12WebSocket extends WebSocketClient {
     @Override
     public void onError(final Exception ex) {
         LOG.error(">> WebSocket error:", ex);
+        // disconnected
+        handler.getOutlet()
+                .accept(Status.CLOSED.convert());
+
     }
 }

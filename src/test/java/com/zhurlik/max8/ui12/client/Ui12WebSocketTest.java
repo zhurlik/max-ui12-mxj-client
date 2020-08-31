@@ -1,14 +1,16 @@
 package com.zhurlik.max8.ui12.client;
 
+import com.zhurlik.max8.ui12.component.MessageHandler;
 import org.java_websocket.handshake.HandshakeImpl1Server;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
+import org.junit.jupiter.api.extension.ExtendWith;
+import org.mockito.junit.jupiter.MockitoExtension;
 
 import java.net.URI;
 
-import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertArrayEquals;
+import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 
 /**
@@ -16,43 +18,46 @@ import static org.junit.jupiter.api.Assertions.assertThrows;
  *
  * @author zhurlik@gmail.com
  */
+@ExtendWith(MockitoExtension.class)
 class Ui12WebSocketTest {
-    private static final Logger LOG = LoggerFactory.getLogger(Ui12WebSocketTest.class);
 
     private Ui12WebSocket testClient;
+    private MessageHandler handler;
+    private String[] outletMessage;
 
     @BeforeEach
     void setUp() throws Exception {
-        testClient = new Ui12WebSocket(new URI(String.format("ws://localhost:%d", 1))) {
-            @Override
-            protected void handle(final String message) {
-                assertEquals("test", message);
-            }
-        };
+        handler = new MessageHandler((strings) -> outletMessage = strings);
+        testClient = new Ui12WebSocket(new URI(String.format("ws://localhost:%d", 1)), handler);
     }
 
     @Test
     void testHandleMessage() throws Exception {
         testClient.onMessage("test");
+        assertArrayEquals(new String[]{"test"}, outletMessage);
     }
 
     @Test
     void testOnError() {
         testClient.onError(null);
+        assertArrayEquals(new String[]{"STATUS: CLOSED"}, outletMessage);
     }
 
     @Test
     void testOnOpen() {
         assertThrows(NullPointerException.class, () -> testClient.onOpen(null));
+        assertNull(outletMessage);
     }
 
     @Test
     void testOnOpenEmpty() {
         testClient.onOpen(new HandshakeImpl1Server());
+        assertArrayEquals(new String[]{"STATUS: CONNECTED"}, outletMessage);
     }
 
     @Test
     void testOnClose() {
         testClient.onClose(1, "test", true);
+        assertArrayEquals(new String[]{"STATUS: CLOSED"}, outletMessage);
     }
 }
