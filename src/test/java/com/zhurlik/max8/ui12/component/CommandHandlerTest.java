@@ -1,6 +1,5 @@
 package com.zhurlik.max8.ui12.component;
 
-
 import com.cycling74.max.Atom;
 import com.zhurlik.max8.ui12.client.Ui12WebSocket;
 import org.junit.jupiter.api.DisplayName;
@@ -12,12 +11,14 @@ import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.Spy;
 import org.mockito.junit.jupiter.MockitoExtension;
+import org.springframework.test.util.ReflectionTestUtils;
 
 import java.util.function.Consumer;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.ArgumentMatchers.eq;
+import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 
 @ExtendWith(MockitoExtension.class)
@@ -88,5 +89,35 @@ class CommandHandlerTest {
         assertTrue(urlHandler.isValidUrl());
         assertEquals("ws://localhost:1234/socket.io/1/websocket/", urlHandler.getURI().toString());
         verify(outlet).accept(new String[]{"STATUS: NETWORK_DOWN"});
+    }
+
+    @Test
+    void testStartThenSend() throws Exception {
+        // Given
+        final String url = "localhost:1234";
+        ReflectionTestUtils.setField(test, "ui12WebSocket", ui12WebSocket);
+
+        // When
+        test.action("url", new Atom[]{Atom.newAtom(url)});
+        test.action(1);
+        test.action("msg", new Atom[]{Atom.newAtom("test message")});
+
+        // Then
+        verify(outlet, times(2)).accept(new String[]{"STATUS: NETWORK_DOWN"});
+    }
+
+    @Test
+    void testStartThenStop() throws Exception {
+        // Given
+        final String url = "localhost:1234";
+        ReflectionTestUtils.setField(test, "ui12WebSocket", ui12WebSocket);
+
+        // When
+        test.action("url", new Atom[]{Atom.newAtom(url)});
+        test.action(1);
+        test.action(0);
+
+        // Then
+        verify(outlet, times(2)).accept(new String[]{"STATUS: NETWORK_DOWN"});
     }
 }
