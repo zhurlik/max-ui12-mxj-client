@@ -1,65 +1,58 @@
 package com.zhurlik.max8.ui12.component;
 
-import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.ExtendWith;
+import org.mockito.InjectMocks;
+import org.mockito.Mock;
+import org.mockito.junit.jupiter.MockitoExtension;
 
-import java.util.LinkedList;
-import java.util.List;
 import java.util.function.Consumer;
 
-import static org.junit.jupiter.api.Assertions.assertArrayEquals;
-import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
-import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.Mockito.never;
+import static org.mockito.Mockito.verify;
 
 /**
  * @author zhurlik@gmail.com
  */
+@ExtendWith(MockitoExtension.class)
 class MessageHandlerTest {
+    @InjectMocks
     private MessageHandler test;
 
-    private final List<String[]> output = new LinkedList<>();
-    private final Consumer<String[]> outlet = strings -> output.add(strings);
-
-    @BeforeEach
-    void setUp() {
-        test = new MessageHandler(outlet);
-        output.clear();
-    }
+    @Mock
+    private Consumer<String[]> outlet;
 
     @Test
     void testNull() {
         test.accept(null);
-        assertTrue(output.isEmpty());
+        verify(outlet, never()).accept(any());
         assertNotNull(test.getOutlet());
     }
 
     @Test
     void testBlank() {
         test.accept("");
-        assertEquals(1, output.size());
-        assertArrayEquals(new String[]{""}, output.get(0));
+        verify(outlet).accept(new String[]{""});
     }
 
     @Test
     void testSed() {
         test.accept("^SED^");
-        assertEquals(1, output.size());
-        assertArrayEquals(new String[]{" SED \" \""}, output.get(0));
+        verify(outlet).accept(new String[]{" SED \" \""});
     }
 
     @Test
     void testArgs() {
         test.accept("^SED^ 1 2");
-        assertEquals(1, output.size());
-        assertArrayEquals(new String[]{" SED  1 2"}, output.get(0));
+        verify(outlet).accept(new String[]{" SED  1 2"});
     }
 
     @Test
     void testMultiple() {
         test.accept("^SED^ 1 2\nSED ");
-        assertEquals(2, output.size());
-        assertArrayEquals(new String[]{" SED  1 2"}, output.get(0));
-        assertArrayEquals(new String[]{"SED \" \""}, output.get(1));
+        verify(outlet).accept(new String[]{" SED  1 2"});
+        verify(outlet).accept(new String[]{"SED \" \""});
     }
 }

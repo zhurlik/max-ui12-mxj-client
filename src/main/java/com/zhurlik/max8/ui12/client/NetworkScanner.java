@@ -56,7 +56,7 @@ public class NetworkScanner {
     NetworkScanner(final InetSocketAddress address, final Consumer<String[]> outlet) {
         this.outlet = outlet;
         this.address = address;
-        LOG.debug(">> Remote address:{}", address.toString());
+        LOG.debug(">> Remote address: {}", address.toString());
     }
 
     /**

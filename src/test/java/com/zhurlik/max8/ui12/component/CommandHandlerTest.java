@@ -32,12 +32,8 @@ class CommandHandlerTest {
     @Mock
     private Ui12WebSocket ui12WebSocket;
 
-    @Spy
-    private Consumer<String[]> outlet = new Consumer<String[]>() {
-        @Override
-        public void accept(final String[] strings) {
-        }
-    };
+    @Mock
+    private Consumer<String[]> outlet;
 
     @DisplayName("Method action(final int value)")
     @ParameterizedTest(name = "{index} ==> command: ''{0}''")
@@ -73,7 +69,7 @@ class CommandHandlerTest {
             verify(urlHandler).parse(new Atom[]{Atom.newAtom(arg)});
         }
         if ("msg".equals(command)) {
-            verify(outlet).accept(eq(new String[]{"STATUS: NOT_CONNECTED_YET"}));
+            verify(outlet).accept(new String[]{"STATUS: NOT_CONNECTED_YET"});
         }
     }
 
@@ -91,7 +87,6 @@ class CommandHandlerTest {
         // Then
         assertTrue(urlHandler.isValidUrl());
         assertEquals("ws://localhost:1234/socket.io/1/websocket/", urlHandler.getURI().toString());
-        //assertEquals(1, messages.size());
-        //assertArrayEquals(new String[]{"STATUS: NETWORK_DOWN"}, messages.get(0));
+        verify(outlet).accept(new String[]{"STATUS: NETWORK_DOWN"});
     }
 }
