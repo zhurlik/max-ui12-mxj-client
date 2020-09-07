@@ -5,7 +5,7 @@ package com.zhurlik.max8.ui12.component;
  *
  * @author zhurlik@gmail.com
  */
-public enum Command {
+enum Command {
     /**
      * The command for starting WebSocket client.
      */

@@ -5,7 +5,7 @@ package com.zhurlik.max8.ui12.component;
  *
  * @author zhurlik@gmail.com
  */
-public enum Status {
+enum Status {
     // websocket
     /**
      * When we still haven't up the WebSocket client.
@@ -22,16 +22,7 @@ public enum Status {
     /**
      * When the connection has been reconnected.
      */
-    RECONNECTED,
-    // network
-    /**
-     * When the network is up.
-     */
-    NETWORK_UP,
-    /**
-     * When the network is down.
-     */
-    NETWORK_DOWN;
+    RECONNECTED;
 
     /**
      * That's needed for sending to the outlet.
@@ -39,7 +30,7 @@ public enum Status {
      *
      * @return required format for the outlet
      */
-    public String[] convert() {
+    String[] convert() {
         return new String[]{
                 String.format("STATUS: %s", name())
         };

@@ -1,30 +1,27 @@
 package com.zhurlik.max8.ui12.component;
 
 import com.cycling74.max.Atom;
-import com.zhurlik.max8.ui12.client.Ui12WebSocket;
-import org.java_websocket.exceptions.WebsocketNotConnectedException;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
-import java.util.function.Consumer;
+import java.util.concurrent.TimeUnit;
+
+import static com.zhurlik.max8.ui12.component.NetworkScanner.FIVE;
 
 /**
  * @author zhurlik@gmail.com
  */
-public class CommandHandler {
-    private static final Logger LOG = LoggerFactory.getLogger("Ui12Proxy");
-
+class CommandHandler {
     /**
-     * For forwarding to the outlet.
+     * For forwarding to the outlets.
+     * Note: 0 - for messages, 1 - for network status
      * See {@link com.cycling74.max.MaxObject#outlet(int, String[])}
      */
-    private final Consumer<String[]> toOutlet;
+    private final Outlets outlets;
     private final UrlHandler urlHandler;
-
+    private NetworkScanner networkScanner;
     private Ui12WebSocket ui12WebSocket;
 
-    CommandHandler(final Consumer<String[]> toOutlet, final UrlHandler urlHandler) {
-        this.toOutlet = toOutlet;
+    CommandHandler(final Outlets outlets, final UrlHandler urlHandler) {
+        this.outlets = outlets;
         this.urlHandler = urlHandler;
     }
 
@@ -36,7 +33,7 @@ public class CommandHandler {
      */
     void action(final int value) {
         final Command command = Command.findBy(value);
-        LOG.debug(">> Command:{}", command.name());
+        outlets.debug(">> Command:{}", command.name());
         switch (command) {
             case START:
                 startJob();
@@ -52,18 +49,22 @@ public class CommandHandler {
      * Opens the WebSocket connection.
      */
     private void startJob() {
-        LOG.debug(">> Starting Job...");
+        outlets.debug(">> Starting Job...");
 
         if (!urlHandler.isValidUrl()) {
-            LOG.warn(">> Please enter valid url of the Ui12 Device: <server:port>");
-            toOutlet.accept(Status.NOT_CONNECTED_YET.convert());
+            outlets.warn(">> Please enter valid url of the Ui12 Device: <server:port>");
+            sendStatus(Status.NOT_CONNECTED_YET);
             return;
         }
         try {
-            ui12WebSocket = new Ui12WebSocket(urlHandler.getURI(), new MessageHandler(toOutlet));
-            ui12WebSocket.up();
+            if (!networkScanner.isHostAvailable()) {
+                return;
+            }
+            ui12WebSocket = new Ui12WebSocket(urlHandler.getURI(), new MessageHandler(outlets));
+            ui12WebSocket.connectBlocking();
         } catch (Exception e) {
-            LOG.debug("ERROR:", e);
+            outlets.error("ERROR:", e);
+            sendStatus(Status.NOT_CONNECTED_YET);
         }
     }
 
@@ -71,16 +72,26 @@ public class CommandHandler {
      * Closes the current WebSocket connection.
      */
     private void stopJob() {
-        LOG.debug(">> Stopping Job...");
+        outlets.debug(">> Stopping Job...");
         if (ui12WebSocket == null) {
-            toOutlet.accept(Status.NOT_CONNECTED_YET.convert());
+            sendStatus(Status.NOT_CONNECTED_YET);
             return;
         }
 
         if (!(ui12WebSocket.isClosed() || ui12WebSocket.isClosing())) {
-            ui12WebSocket.down();
+            ui12WebSocket.close();
+            sleep();
+            sendStatus(Status.CLOSED);
+
             // something is a wrong
             ui12WebSocket = null;
+        }
+    }
+
+    private void sleep() {
+        try {
+            TimeUnit.SECONDS.sleep(FIVE);
+        } catch (InterruptedException ignored) {
         }
     }
 
@@ -92,15 +103,25 @@ public class CommandHandler {
      */
     void action(final String message, final Atom[] args) {
         final Command command = Command.findBy(message);
-        LOG.debug(">> Command:{}", command.name());
+        outlets.debug(">> Command:{}", command.name());
         switch (command) {
             case SET_URL:
-                urlHandler.parse(args);
+                startNetworkScan(args);
                 break;
             case SEND_MESSAGE:
                 send(args);
                 break;
             default:
+        }
+    }
+
+    private void startNetworkScan(final Atom[] args) {
+        try {
+            urlHandler.parse(args);
+            networkScanner = new NetworkScanner(urlHandler.getInetSocketAddress(), outlets);
+            networkScanner.ping();
+        } catch (Exception e) {
+            outlets.error(">> Error:", e);
         }
     }
 
@@ -111,25 +132,20 @@ public class CommandHandler {
      */
     private void send(final Atom[] args) {
         if (ui12WebSocket == null) {
-            toOutlet.accept(Status.NOT_CONNECTED_YET.convert());
+            sendStatus(Status.NOT_CONNECTED_YET);
             return;
         }
 
         // try make reconnection when it's possible
         try {
-            if (ui12WebSocket.isClosed() || ui12WebSocket.isClosing()) {
-                LOG.warn(">> Reconnecting...");
-
-                ui12WebSocket.reconnectBlocking();
-                toOutlet.accept(Status.RECONNECTED.convert());
-            }
             ui12WebSocket.toUi12Device(args);
-        } catch (WebsocketNotConnectedException e) {
-            LOG.error(">> Error:", e);
-            toOutlet.accept(Status.NOT_CONNECTED_YET.convert());
-        } catch (InterruptedException e) {
-            LOG.error(">> Error:", e);
-            toOutlet.accept(Status.CLOSED.convert());
+        } catch (Exception e) {
+            outlets.error(">> Error:", e);
+            sendStatus(Status.CLOSED);
         }
+    }
+
+    private void sendStatus(final Status status) {
+        outlets.toNetworkOutlet(status.convert());
     }
 }

@@ -1,23 +1,23 @@
 package com.zhurlik.max8.ui12.component;
 
 import com.cycling74.max.Atom;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
+import java.net.InetSocketAddress;
 import java.net.URI;
 import java.net.URISyntaxException;
 import java.util.Optional;
 
-public class UrlHandler {
-    private static final Logger LOG = LoggerFactory.getLogger("Ui12Proxy");
-
+class UrlHandler {
     private String host = "";
     private int port = -1;
+    private final Outlets outlets;
 
     /**
      * Default constructor.
+     * @param outlets
      */
-    UrlHandler() {
+    UrlHandler(final Outlets outlets) {
+        this.outlets = outlets;
     }
 
     /**
@@ -78,7 +78,21 @@ public class UrlHandler {
 
     final URI getURI() throws URISyntaxException {
         final String url = isValidUrl() ? String.format("ws://%s:%d/socket.io/1/websocket/", host, port) : "";
-        LOG.info(">> Endpoint: {}", url);
+        outlets.info(">> Endpoint: {}", url);
         return new URI(url);
+    }
+
+    /**
+     * Retruns {@link InetSocketAddress} for checking the network status.
+     *
+     * @return InetSocketAddress
+     */
+    InetSocketAddress getInetSocketAddress() {
+        try {
+            return new InetSocketAddress(getURI().getHost(), getURI().getPort());
+        } catch (URISyntaxException e) {
+            outlets.error("ERROR:", e);
+            return null;
+        }
     }
 }

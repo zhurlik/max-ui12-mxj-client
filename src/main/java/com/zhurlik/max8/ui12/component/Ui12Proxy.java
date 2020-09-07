@@ -2,8 +2,10 @@ package com.zhurlik.max8.ui12.component;
 
 import com.cycling74.max.Atom;
 import com.cycling74.max.MaxObject;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
+
+import java.util.ArrayList;
+import java.util.List;
+import java.util.function.Consumer;
 
 /**
  * Max8 component for working with Ui12 device via WebSocket connection.
@@ -13,11 +15,6 @@ import org.slf4j.LoggerFactory;
  */
 public final class Ui12Proxy extends MaxObject {
     /**
-     * Logger.
-     */
-    private static final Logger LOG = LoggerFactory.getLogger("Ui12Proxy");
-
-    /**
      * Inlet label.
      */
     private static final String[] INLET_ASSIST = new String[]{"Input"};
@@ -25,19 +22,27 @@ public final class Ui12Proxy extends MaxObject {
     /**
      * Outlet label.
      */
-    private static final String[] OUTLET_ASSIST = new String[]{"Output"};
+    private static final String[] OUTLET_ASSIST = new String[]{"Main Output", "Network Status", "Debug Console"};
 
     private final CommandHandler commandHandler;
+    private final Outlets outlets;
 
     /**
      * Builds the Max8 component.
      */
     public Ui12Proxy() {
-        LOG.info(">> Max8 component for working with Ui12 device via WebSocket");
-        declareIO(1, 1);
+        declareIO(1, OUTLET_ASSIST.length);
         setInletAssist(INLET_ASSIST);
         setOutletAssist(OUTLET_ASSIST);
-        commandHandler = new CommandHandler((strings) -> outlet(0, strings), new UrlHandler());
+
+        final List<Consumer<String[]>> list = new ArrayList<>(OUTLET_ASSIST.length);
+        list.add((strings) -> outlet(0, strings));
+        list.add((strings) -> outlet(1, strings));
+        list.add((strings) -> outlet(2, strings));
+
+        outlets = new Outlets(list);
+        commandHandler = new CommandHandler(outlets, new UrlHandler(outlets));
+        outlets.info(">> Max8 component for working with Ui12 device via WebSocket has been loaded");
     }
 
     /**
@@ -48,7 +53,7 @@ public final class Ui12Proxy extends MaxObject {
      */
     @Override
     protected void anything(final String message, final Atom[] args) {
-        LOG.debug(">> Max8 signal: message = {}, args = {}", message, Atom.toDebugString(args));
+        outlets.debug(">> Max8 signal: message = {}, args = {}", message, Atom.toDebugString(args));
         commandHandler.action(message, args);
     }
 
@@ -59,8 +64,8 @@ public final class Ui12Proxy extends MaxObject {
      */
     @Override
     protected void inlet(final int value) {
-        LOG.debug(">> Max8 signal: value = {}", value);
-        LOG.debug(">> Inlet:{}", getInlet());
+        outlets.debug(">> Max8 signal: value = {}", value);
+        outlets.debug(">> Inlet:{}", getInlet());
         commandHandler.action(value);
     }
 }

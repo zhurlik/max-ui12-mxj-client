@@ -1,19 +1,19 @@
-package com.zhurlik.max8.ui12.client;
+package com.zhurlik.max8.ui12.component;
 
+import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
+import org.mockito.Spy;
 import org.mockito.junit.jupiter.MockitoExtension;
+import org.springframework.test.util.ReflectionTestUtils;
 
 import java.net.InetSocketAddress;
 import java.util.concurrent.TimeUnit;
-import java.util.function.Consumer;
 
-import static com.zhurlik.max8.ui12.client.NetworkScanner.TEN;
+import static com.zhurlik.max8.ui12.component.NetworkScanner.TEN;
 import static org.junit.jupiter.api.Assertions.assertFalse;
-import static org.junit.jupiter.api.Assertions.assertThrows;
-import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 
 /**
@@ -21,18 +21,19 @@ import static org.mockito.Mockito.verify;
  */
 @ExtendWith(MockitoExtension.class)
 class NetworkScannerTest {
+    private final int port = 1234;
     @Mock
-    private Consumer<String[]> outlet;
+    private Outlets outlets;
 
-    @Mock
-    private InetSocketAddress address;
+    @Spy
+    private InetSocketAddress address = new InetSocketAddress("localhost", port);
 
     @InjectMocks
     private NetworkScanner test;
 
-    @Test
-    void testConstructorWithNulls() {
-        assertThrows(NullPointerException.class, () -> new NetworkScanner(null, null));
+    @BeforeEach
+    void setUp() {
+        ReflectionTestUtils.setField(test, "address", address);
     }
 
     @Test
@@ -45,12 +46,11 @@ class NetworkScannerTest {
         test.ping();
         TimeUnit.SECONDS.sleep(TEN);
         test.stopPing();
-        verify(outlet, times(2)).accept(new String[]{"STATUS: NETWORK_DOWN"});
     }
 
     @Test
     void testIsHostAvailable() {
         assertFalse(test.isHostAvailable());
-        verify(outlet).accept(new String[]{"STATUS: NETWORK_DOWN"});
+        verify(outlets).toNetworkOutlet(new String[]{"127.0.0.1:1234 offline"});
     }
 }

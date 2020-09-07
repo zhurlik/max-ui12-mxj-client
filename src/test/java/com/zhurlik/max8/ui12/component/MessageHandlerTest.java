@@ -6,8 +6,6 @@ import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 
-import java.util.function.Consumer;
-
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.never;
@@ -22,37 +20,39 @@ class MessageHandlerTest {
     private MessageHandler test;
 
     @Mock
-    private Consumer<String[]> outlet;
+    private Outlets outlets;
 
     @Test
     void testNull() {
         test.accept(null);
-        verify(outlet, never()).accept(any());
-        assertNotNull(test.getOutlet());
+        verify(outlets, never()).toMainOutlet(any());
+        verify(outlets, never()).toNetworkOutlet(any());
+        verify(outlets, never()).toDebugOutlet(any());
+        assertNotNull(test.getOutlets());
     }
 
     @Test
     void testBlank() {
         test.accept("");
-        verify(outlet).accept(new String[]{""});
+        verify(outlets).toMainOutlet(new String[]{""});
     }
 
     @Test
     void testSed() {
         test.accept("^SED^");
-        verify(outlet).accept(new String[]{" SED \" \""});
+        verify(outlets).toMainOutlet(new String[]{" SED \" \""});
     }
 
     @Test
     void testArgs() {
         test.accept("^SED^ 1 2");
-        verify(outlet).accept(new String[]{" SED  1 2"});
+        verify(outlets).toMainOutlet(new String[]{" SED  1 2"});
     }
 
     @Test
     void testMultiple() {
         test.accept("^SED^ 1 2\nSED ");
-        verify(outlet).accept(new String[]{" SED  1 2"});
-        verify(outlet).accept(new String[]{"SED \" \""});
+        verify(outlets).toMainOutlet(new String[]{" SED  1 2"});
+        verify(outlets).toMainOutlet(new String[]{"SED \" \""});
     }
 }

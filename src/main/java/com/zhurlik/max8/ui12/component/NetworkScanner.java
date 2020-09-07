@@ -1,8 +1,4 @@
-package com.zhurlik.max8.ui12.client;
-
-import com.zhurlik.max8.ui12.component.Status;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
+package com.zhurlik.max8.ui12.component;
 
 import java.net.InetSocketAddress;
 import java.net.Socket;
@@ -10,16 +6,13 @@ import java.util.concurrent.Executor;
 import java.util.concurrent.Executors;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
-import java.util.function.Consumer;
 
 /**
  * This class is doing a lot of with checking the network in general and connection with Ui12 device.
  *
  * @author zhurlik@gamil.com
  */
-public class NetworkScanner {
-    private static final Logger LOG = LoggerFactory.getLogger("Ui12Proxy");
-
+class NetworkScanner {
     /**
      * A single thread to check network status.
      */
@@ -41,22 +34,21 @@ public class NetworkScanner {
     private static final int PING_TIMEOUT = 3000;
 
     /**
-     * Reference to Max8 outlet for sending statuses via the outlet.
+     * Reference to Max8 outlets: main, network and debug.
      */
-    private final Consumer<String[]> outlet;
+    private final Outlets outlets;
     private final InetSocketAddress address;
     private final AtomicBoolean stop = new AtomicBoolean(false);
 
     /**
-     * The constructor that extract the server url from incoming Max8 signal.
+     * The default constructor for binding the fields.
      *
-     * @param address socket address of the Ui12 device
-     * @param outlet reference to {@link com.cycling74.max.MaxObject#outlet(int, String[])}
+     * @param address {@link InetSocketAddress} for checking the network
+     * @param outlets reference to {@link com.cycling74.max.MaxObject#outlet(int, String[])}
      */
-    NetworkScanner(final InetSocketAddress address, final Consumer<String[]> outlet) {
-        this.outlet = outlet;
+    NetworkScanner(final InetSocketAddress address, final Outlets outlets) {
+        this.outlets = outlets;
         this.address = address;
-        LOG.debug(">> Remote address: {}", address.toString());
     }
 
     /**
@@ -67,7 +59,10 @@ public class NetworkScanner {
     boolean isHostAvailable() {
         if (address != null) {
             final boolean reachable = isReachable();
-            outlet.accept(!reachable ? Status.NETWORK_DOWN.convert() : Status.NETWORK_UP.convert());
+            final String host = address.getAddress().toString().split("/")[1];
+            final int port = address.getPort();
+            final String status = reachable ? "online" : "offline";
+            outlets.toNetworkOutlet(new String[] {String.format("%s:%d %s", host, port, status)});
 
             return reachable;
         }

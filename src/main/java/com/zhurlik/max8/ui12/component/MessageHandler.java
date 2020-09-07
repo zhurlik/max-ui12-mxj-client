@@ -8,21 +8,22 @@ import java.util.function.Consumer;
  *
  * @author zhurlik@gmail.com
  */
-public class MessageHandler implements Consumer<String> {
+class MessageHandler implements Consumer<String> {
 
     /**
-     * For forwarding to the outlet.
+     * For forwarding to the outlets.
      * See {@link com.cycling74.max.MaxObject#outlet(int, String[])}
      */
-    private final Consumer<String[]> toOutlet;
+    private final Outlets outlets;
 
     /**
      * A constructor.
      *
-     * @param toOutlet reference to the outlet method. see {@link com.cycling74.max.MaxObject#outlet(int, String[])}
+     * @param outlets reference to the outlets of the MaxObject.
+     *                see {@link com.cycling74.max.MaxObject#outlet(int, String[])}
      */
-    public MessageHandler(final Consumer<String[]> toOutlet) {
-        this.toOutlet = toOutlet;
+    MessageHandler(final Outlets outlets) {
+        this.outlets = outlets;
     }
 
     /**
@@ -44,7 +45,7 @@ public class MessageHandler implements Consumer<String> {
                 // trick with last space
                 .map(s -> s.replaceAll(" $", " \" \""))
                 // sending to the corresponded outlet
-                .forEach(s -> toOutlet.accept(new String[]{s}));
+                .forEach(s -> outlets.toMainOutlet(new String[]{s}));
     }
 
     /**
@@ -52,7 +53,7 @@ public class MessageHandler implements Consumer<String> {
      *
      * @return a function for forwarding the messages to the outlet
      */
-    public Consumer<String[]> getOutlet() {
-        return toOutlet;
+    Outlets getOutlets() {
+        return outlets;
     }
 }
