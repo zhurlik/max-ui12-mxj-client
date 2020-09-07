@@ -23,10 +23,10 @@ repositories {
 
 dependencies {
     implementation name: 'max'
-    implementation group: 'ch.qos.logback', name: 'logback-classic', version: property('ch.qos.logback')
     implementation group: 'org.java-websocket', name: 'Java-WebSocket', version: property('org.java-websocket')
 
     // test
+    testImplementation group: 'ch.qos.logback', name: 'logback-classic', version: property('ch.qos.logback')
     testImplementation group: 'org.mockito', name: 'mockito-core', version: property('org.mockito')
     testImplementation group: 'org.mockito', name: 'mockito-junit-jupiter', version: property('org.mockito')
     testImplementation group: 'org.junit.jupiter', name: 'junit-jupiter-api', version: property('org.junit.jupiter')
@@ -40,8 +40,10 @@ task customFatJar(type: Jar) {
     from {
         configurations.compileClasspath.collect { it.isDirectory() ? it : zipTree(it) }
     }
-    // exclude max8
+    // max8
     exclude 'com/cycling74/**'
+    // slf4j
+    exclude 'org/slf4j/**'
     with jar
 }
 
