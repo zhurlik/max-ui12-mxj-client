@@ -7,6 +7,11 @@ import java.net.URI;
 import java.net.URISyntaxException;
 import java.util.Optional;
 
+/**
+ * To parse the url and to extract the {@link InetSocketAddress}.
+ *
+ * @author zhurlik@gmail.com
+ */
 class UrlHandler {
     private String host = "";
     private int port = -1;
@@ -76,7 +81,7 @@ class UrlHandler {
         return !host.isEmpty() && port != -1;
     }
 
-    final URI getURI() throws URISyntaxException {
+    URI getURI() throws URISyntaxException {
         final String url = isValidUrl() ? String.format("ws://%s:%d/socket.io/1/websocket/", host, port) : "";
         outlets.info(">> Endpoint: {}", url);
         return new URI(url);
@@ -90,8 +95,8 @@ class UrlHandler {
     InetSocketAddress getInetSocketAddress() {
         try {
             return new InetSocketAddress(getURI().getHost(), getURI().getPort());
-        } catch (URISyntaxException e) {
-            outlets.error("ERROR:", e);
+        } catch (Exception e) {
+            outlets.error(e);
             return null;
         }
     }

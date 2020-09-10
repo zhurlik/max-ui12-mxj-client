@@ -16,7 +16,10 @@ import org.mockito.junit.jupiter.MockitoExtension;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.Mockito.verify;
 
 /**
  * @author zhurlik@gmail.com
@@ -82,5 +85,25 @@ class UrlHandlerTest {
         // Then
         assertTrue(test.isValidUrl());
         assertEquals(expected, test.getURI().toString());
+    }
+
+    @Test
+    void testGetInetSocketAddress() {
+        assertNull(test.getInetSocketAddress());
+        verify(outlets).error(any(IllegalArgumentException.class));
+    }
+
+    @Test
+    void testGetInetSocketAddressWithValidUrl() {
+        final Atom[] args = new Atom[] {Atom.newAtom("localhost:1234")};
+        test.parse(args);
+        assertNotNull(test.getInetSocketAddress());
+    }
+
+    @Test
+    void testGetInetSocketAddressWithInvalidUrl() {
+        final Atom[] args = new Atom[] {Atom.newAtom("not valid")};
+        test.parse(args);
+        assertNull(test.getInetSocketAddress());
     }
 }
