@@ -13,6 +13,7 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.function.Consumer;
 
+import static org.mockito.ArgumentMatchers.argThat;
 import static org.mockito.Mockito.verify;
 
 @ExtendWith(MockitoExtension.class)
@@ -70,6 +71,22 @@ class OutletsTest {
     }
 
     @Test
+    void testWarn() {
+        final String msg = "test";
+        test.warn(msg);
+        verify(outlets).get(2);
+        verify(debugOutlet).accept(new String[] {"WARN: test"});
+    }
+
+    @Test
+    void testError() {
+        test.error(new RuntimeException("test error"));
+        verify(outlets).get(2);
+        verify(debugOutlet).accept(argThat(argument -> argument[0]
+                .startsWith("ERROR: java.lang.RuntimeException: test error")));
+    }
+
+    @Test
     void testInfoWithParam() {
         final String msg = "test {}";
         test.info(msg, "bla-bla");
@@ -84,5 +101,13 @@ class OutletsTest {
                 Atom.toDebugString(new Atom[] {Atom.newAtom(1), Atom.newAtom("hello")}));
         verify(outlets).get(2);
         verify(debugOutlet).accept(new String[] {"DEBUG: test param1: value1, param2: Atom[2]={1:I}{hello:S}"});
+    }
+
+    @Test
+    void testDebugStr() {
+        final String msg = "test";
+        test.debug(msg);
+        verify(outlets).get(2);
+        verify(debugOutlet).accept(new String[] {"DEBUG: test"});
     }
 }

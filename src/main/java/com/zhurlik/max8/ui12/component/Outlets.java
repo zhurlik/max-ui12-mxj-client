@@ -84,10 +84,9 @@ class Outlets {
     /**
      * Log a message in the Debug Outlet.
      *
-     * @param msg the message string to be logged
      * @param throwable any exception
      */
-    void error(final String msg, final Throwable throwable) {
+    void error(final Throwable throwable) {
         final StringWriter sw = new StringWriter();
         final PrintWriter pw = new PrintWriter(sw);
         throwable.printStackTrace(pw);
