@@ -26,7 +26,7 @@ class CommandTest {
     }
 
     @DisplayName("Return a command by a string")
-    @ParameterizedTest(name = "{index} ==> the string ''{0}'' the command ''{1}''" )
+    @ParameterizedTest(name = "{index} ==> the string ''{0}'' the command ''{1}''")
     @MethodSource("commandsProvider")
     void testFindByString(final String str, final Command expected) {
         assertSame(expected, Command.findBy(str));
