@@ -1,9 +1,14 @@
 package com.zhurlik.max8.ui12.component;
 
+import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.Arguments;
+import org.junit.jupiter.params.provider.MethodSource;
 
 import java.util.Arrays;
 import java.util.stream.Collectors;
+import java.util.stream.Stream;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertSame;
@@ -16,47 +21,25 @@ import static org.junit.jupiter.api.Assertions.assertSame;
 class CommandTest {
     @Test
     void testStatus() {
-        assertEquals("START,STOP,SET_URL,SEND_MESSAGE,UNDEFINED",
+        assertEquals("SET_URL,SEND_MESSAGE,UNDEFINED",
                 Arrays.stream(Command.values()).map(Enum::name).collect(Collectors.joining(",")));
     }
 
-    @Test
-    void testFindByIntNull() {
-        assertSame(Command.UNDEFINED, Command.findBy(null));
+    @DisplayName("Return a command by a string")
+    @ParameterizedTest(name = "{index} ==> the string ''{0}'' the command ''{1}''" )
+    @MethodSource("commandsProvider")
+    void testFindByString(final String str, final Command expected) {
+        assertSame(expected, Command.findBy(str));
     }
 
-    @Test
-    void testFindByIntNegative() {
-        assertSame(Command.UNDEFINED, Command.findBy(-1));
-    }
-
-    @Test
-    void testFindByIntStart() {
-        assertSame(Command.START, Command.findBy(1));
-    }
-
-    @Test
-    void testFindByIntStop() {
-        assertSame(Command.STOP, Command.findBy(0));
-    }
-
-    @Test
-    void testFindByStringNull() {
-        assertSame(Command.UNDEFINED, Command.findBy((String) null));
-    }
-
-    @Test
-    void testFindByStringEmpty() {
-        assertSame(Command.UNDEFINED, Command.findBy(""));
-    }
-
-    @Test
-    void testFindByStringUrl() {
-        assertSame(Command.SET_URL, Command.findBy("url"));
-    }
-
-    @Test
-    void testFindByStringMessage() {
-        assertSame(Command.SEND_MESSAGE, Command.findBy("msg"));
+    private static Stream<Arguments> commandsProvider() {
+        return Stream.of(
+                Arguments.arguments("", Command.UNDEFINED),
+                Arguments.arguments(null, Command.UNDEFINED),
+                Arguments.arguments("url", Command.SET_URL),
+                Arguments.arguments("uRl", Command.SET_URL),
+                Arguments.arguments("msg", Command.SEND_MESSAGE),
+                Arguments.arguments("msG", Command.SEND_MESSAGE)
+        );
     }
 }
