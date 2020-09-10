@@ -14,6 +14,8 @@ import java.util.concurrent.TimeUnit;
 
 import static com.zhurlik.max8.ui12.component.NetworkScanner.TEN;
 import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
 
 /**
@@ -31,6 +33,9 @@ class NetworkScannerTest {
     @InjectMocks
     private NetworkScanner test;
 
+    @Mock
+    private Ui12WebSocket ui12WebSocket;
+
     @BeforeEach
     void setUp() {
         ReflectionTestUtils.setField(test, "address", address);
@@ -43,7 +48,7 @@ class NetworkScannerTest {
 
     @Test
     void testPingAndStop() throws Exception {
-        test.ping();
+        test.ping(ui12WebSocket);
         TimeUnit.SECONDS.sleep(TEN);
         test.stopPing();
     }
@@ -51,6 +56,13 @@ class NetworkScannerTest {
     @Test
     void testIsHostAvailable() {
         assertFalse(test.isHostAvailable());
-        verify(outlets).toNetworkOutlet(new String[]{"127.0.0.1:1234 offline"});
+        verify(outlets).toNetworkOutlet(new String[]{"online 0"});
+    }
+
+    @Test
+    void testIsHostAvailableWhenAddressNull() {
+        ReflectionTestUtils.setField(test, "address", null);
+        assertFalse(test.isHostAvailable());
+        verify(outlets, never()).toNetworkOutlet(any());
     }
 }

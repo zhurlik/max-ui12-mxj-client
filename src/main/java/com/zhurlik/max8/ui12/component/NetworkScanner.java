@@ -59,10 +59,9 @@ class NetworkScanner {
     boolean isHostAvailable() {
         if (address != null) {
             final boolean reachable = isReachable();
-            final String host = address.getAddress().toString().split("/")[1];
-            final int port = address.getPort();
-            final String status = reachable ? "online" : "offline";
-            outlets.toNetworkOutlet(new String[] {String.format("%s:%d %s", host, port, status)});
+            // TODO: move to enum
+            final String status = reachable ? "online 1" : "online 0";
+            outlets.toNetworkOutlet(new String[] {status});
 
             return reachable;
         }
@@ -87,13 +86,21 @@ class NetworkScanner {
 
     /**
      * NOTE: that's a background process.
+     * @param ui12WebSocket
      */
-    void ping() {
+    void ping(final Ui12WebSocket ui12WebSocket) {
+        stop.set(false);
         EXECUTOR.execute(() -> {
+            boolean prevStatus = true;
             while (!stop.get()) {
                 final boolean reachable = isHostAvailable();
+                if (reachable && !prevStatus) {
+                    ui12WebSocket.reconnect();
+                }
+                prevStatus = reachable;
                 try {
                     TimeUnit.SECONDS.sleep((reachable) ? TEN : FIVE);
+
                 } catch (InterruptedException ignored) {
                 }
             }
@@ -104,6 +111,6 @@ class NetworkScanner {
      * Stops the process in the background for checking the network.
      */
     void stopPing() {
-        stop.set(false);
+        stop.set(true);
     }
 }
