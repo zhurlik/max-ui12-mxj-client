@@ -2,6 +2,7 @@ package com.zhurlik.max8.ui12.component;
 
 import com.cycling74.max.Atom;
 import org.java_websocket.client.WebSocketClient;
+import org.java_websocket.drafts.Draft_6455;
 import org.java_websocket.handshake.ServerHandshake;
 
 import java.net.URI;
@@ -16,6 +17,7 @@ import java.util.List;
  * @author zhurlik@gmail.com
  */
 class Ui12WebSocket extends WebSocketClient {
+    private static final int CONNECT_TIMEOUT = 20000;
     private Instant startSession = Instant.now();
     private final MessageHandler handler;
     private final Outlets outlets;
@@ -27,7 +29,7 @@ class Ui12WebSocket extends WebSocketClient {
      * @param handler for handling the incoming messages
      */
     Ui12WebSocket(final URI serverUri, final MessageHandler handler) {
-        super(serverUri);
+        super(serverUri,  new Draft_6455(), null, CONNECT_TIMEOUT);
         this.handler = handler;
         this.outlets = handler.getOutlets();
     }
@@ -53,7 +55,7 @@ class Ui12WebSocket extends WebSocketClient {
         );
 
         // connected
-        handler.getOutlets().toNetworkOutlet(Status.CONNECTED.convert());
+        handler.getOutlets().toNetworkOutlet(new String[]{"connect 1"});
     }
 
     @Override
@@ -74,7 +76,7 @@ class Ui12WebSocket extends WebSocketClient {
         outlets.debug(">> Session time: {}", Duration.between(startSession, Instant.now()).toMillis());
 
         // disconnected
-        outlets.toNetworkOutlet(Status.CLOSED.convert());
+        handler.getOutlets().toNetworkOutlet(new String[]{"connect 0"});
     }
 
     /**
@@ -84,7 +86,7 @@ class Ui12WebSocket extends WebSocketClient {
      */
     @Override
     public void onError(final Exception ex) {
-        outlets.error(">> WebSocket error:", ex);
+        outlets.error(ex);
         // disconnected
         handler.getOutlets().toNetworkOutlet(Status.CLOSED.convert());
     }

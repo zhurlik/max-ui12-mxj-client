@@ -56,13 +56,13 @@ class Ui12WebSocketTest {
     @Test
     void testOnOpenEmpty() {
         testClient.onOpen(new HandshakeImpl1Server());
-        verify(outlets).toNetworkOutlet(new String[]{"STATUS: CONNECTED"});
+        verify(outlets).toNetworkOutlet(new String[]{"connect 1"});
     }
 
     @Test
     void testOnClose() {
         testClient.onClose(1, "test", false);
-        verify(outlets).toNetworkOutlet(new String[]{"STATUS: CLOSED"});
+        verify(outlets).toNetworkOutlet(new String[]{"connect 0"});
         verify(outlets).debug(eq(">> WebSocket connection has been closed."));
         verify(outlets).debug(eq(">> Server response: code = {}, reason = {}, remote = {}"), any());
         verify(outlets).debug(eq(">> Session time: {}"), any());
@@ -71,7 +71,7 @@ class Ui12WebSocketTest {
     @Test
     void testOnCloseRemote() {
         testClient.onClose(1, "test", true);
-        verify(outlets).toNetworkOutlet(new String[]{"STATUS: CLOSED"});
+        verify(outlets).toNetworkOutlet(new String[]{"connect 0"});
         verify(outlets).debug(eq(">> WebSocket connection has been closed."));
         verify(outlets).debug(eq(">> Server response: code = {}, reason = {}, remote = {}"), any());
         verify(outlets).debug(eq(">> Session time: {}"), any());
