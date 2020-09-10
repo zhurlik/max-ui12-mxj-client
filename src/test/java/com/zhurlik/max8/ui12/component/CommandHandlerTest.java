@@ -11,6 +11,11 @@ import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 import org.springframework.test.util.ReflectionTestUtils;
 
+import java.net.URI;
+
+import static org.junit.jupiter.api.Assertions.assertNull;
+import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
@@ -27,24 +32,10 @@ class CommandHandlerTest {
     private Ui12WebSocket ui12WebSocket;
 
     @Mock
+    private NetworkScanner networkScanner;
+
+    @Mock
     private Outlets outlets;
-
-    @DisplayName("Method action(final int value)")
-    @ParameterizedTest(name = "{index} ==> command: ''{0}''")
-    @CsvSource({
-            "1, 'NOT_CONNECTED_YET'",
-            "0, 'NOT_CONNECTED_YET'",
-            "10, "})
-    void testAction(final int code, final String status) {
-        // Given
-        // When
-        test.action(code);
-
-        // Then
-        if (status != null) {
-            verify(outlets).toNetworkOutlet(new String[]{"STATUS: " + status});
-        }
-    }
 
     @DisplayName("Method action(final String message, final Atom[] args)")
     @ParameterizedTest(name = "{index} ==> command: ''{0}'', parameter: ''{1}''")
@@ -82,7 +73,6 @@ class CommandHandlerTest {
         // Then
         verify(outlets).debug(">> Command:{}", "SET_URL");
         verify(urlHandler).parse(new Atom[]{Atom.newAtom(url)});
-        verify(urlHandler).getInetSocketAddress();
         verify(outlets).debug(">> Command:{}", "SEND_MESSAGE");
         verify(ui12WebSocket).toUi12Device(new Atom[]{Atom.newAtom("test")});
     }
@@ -92,18 +82,20 @@ class CommandHandlerTest {
         // Given
         final String url = "localhost:1234";
         ReflectionTestUtils.setField(test, "ui12WebSocket", ui12WebSocket);
+        ReflectionTestUtils.setField(test, "networkScanner", networkScanner);
         when(urlHandler.isValidUrl()).thenReturn(true);
 
         // When
         test.action("url", new Atom[]{Atom.newAtom(url)});
-        test.action(1);
         test.action("msg", new Atom[]{Atom.newAtom("test message")});
 
         // Then
         verify(urlHandler).parse(new Atom[]{Atom.newAtom(url)});
+        verify(ui12WebSocket).closeBlocking();
+        verify(networkScanner).stopPing();
         verify(urlHandler).getInetSocketAddress();
+        verify(urlHandler).getURI();
         verify(outlets).debug(">> Command:{}", "SET_URL");
-        verify(outlets).debug(">> Command:{}", "START");
         verify(outlets).debug(">> Starting Job...");
         verify(outlets).debug(">> Command:{}", "SEND_MESSAGE");
         verify(ui12WebSocket).toUi12Device(new Atom[]{Atom.newAtom("test message")});
@@ -118,16 +110,45 @@ class CommandHandlerTest {
 
         // When
         test.action("url", new Atom[]{Atom.newAtom(url)});
-        test.action(1);
-        test.action(0);
+        test.action("url", new Atom[0]);
 
         // Then
-        verify(outlets).debug(">> Command:{}", "SET_URL");
+        verify(outlets, times(2)).debug(">> Command:{}", "SET_URL");
         verify(urlHandler).parse(new Atom[]{Atom.newAtom(url)});
-        verify(urlHandler).getInetSocketAddress();
-        verify(outlets).debug(">> Command:{}", "START");
         verify(outlets).debug(">> Starting Job...");
-        verify(outlets).debug(">> Command:{}", "STOP");
         verify(outlets).debug(">> Stopping Job...");
+    }
+
+    @Test
+    void testSendAndReconnect() throws Exception {
+        // Given
+        final String url = "ws://localhost:1234";
+        ReflectionTestUtils.setField(test, "ui12WebSocket", ui12WebSocket);
+        when(ui12WebSocket.isClosed()).thenReturn(true);
+        when(urlHandler.getURI()).thenReturn(new URI(url));
+
+        // When
+        test.action("msg", new Atom[]{Atom.newAtom("test message")});
+
+        // Then
+        verify(ui12WebSocket).closeBlocking();
+        verify(outlets).debug(">> Command:{}", "SEND_MESSAGE");
+        verify(outlets).debug(">> Sending: {}", "test message");
+        verify(outlets, times(2)).error(any());
+        verify(outlets, times(2)).toNetworkOutlet(new String[] {"STATUS: CLOSED"});
+    }
+
+    @Test
+    void testStopWithError() throws Exception {
+        // Given
+        ReflectionTestUtils.setField(test, "ui12WebSocket", ui12WebSocket);
+
+        // When
+        test.action("url", new Atom[0]);
+
+        // Then
+        verify(outlets).debug(">> Stopping Job...");
+        verify(ui12WebSocket).closeBlocking();
+        assertNull(ReflectionTestUtils.getField(test, "ui12WebSocket"));
     }
 }

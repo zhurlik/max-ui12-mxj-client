@@ -2,22 +2,26 @@ package com.zhurlik.max8.ui12.component;
 
 import com.cycling74.max.Atom;
 
-import java.util.concurrent.TimeUnit;
-
-import static com.zhurlik.max8.ui12.component.NetworkScanner.FIVE;
-
 /**
+ * This class implements main behavior: start/stop connection with Ui12, sending the messages and scanning the network.
+ *
  * @author zhurlik@gmail.com
  */
 class CommandHandler {
     /**
-     * For forwarding to the outlets.
-     * Note: 0 - for messages, 1 - for network status
-     * See {@link com.cycling74.max.MaxObject#outlet(int, String[])}
+     * 0 - for messages, 1 - for network status, 2 - debug console.
      */
     private final Outlets outlets;
     private final UrlHandler urlHandler;
+
+    /**
+     * Pings that the UI12 device is available in the network.
+     */
     private NetworkScanner networkScanner;
+
+    /**
+     * The real connection between Ui12 device.
+     */
     private Ui12WebSocket ui12WebSocket;
 
     CommandHandler(final Outlets outlets, final UrlHandler urlHandler) {
@@ -26,44 +30,34 @@ class CommandHandler {
     }
 
     /**
-     * Executes one of the following actions: START or STOP.
-     * See {@link com.cycling74.max.MaxObject#inlet(int)}
-     *
-     * @param value expected signal either 0 or 1
-     */
-    void action(final int value) {
-        final Command command = Command.findBy(value);
-        outlets.debug(">> Command:{}", command.name());
-        switch (command) {
-            case START:
-                startJob();
-                break;
-            case STOP:
-                stopJob();
-                break;
-            default:
-        }
-    }
-
-    /**
      * Opens the WebSocket connection.
+     *
+     * @param args incoming from the inlet
      */
-    private void startJob() {
+    private void startJob(final Atom[] args) {
         outlets.debug(">> Starting Job...");
+        urlHandler.parse(args);
 
         if (!urlHandler.isValidUrl()) {
             outlets.warn(">> Please enter valid url of the Ui12 Device: <server:port>");
             sendStatus(Status.NOT_CONNECTED_YET);
             return;
         }
+
         try {
-            if (!networkScanner.isHostAvailable()) {
-                return;
+            // when the connection was created before
+            if (ui12WebSocket != null) {
+                ui12WebSocket.closeBlocking();
+                networkScanner.stopPing();
             }
+
+            // we have to recreate the connection and restart network scanning
+            networkScanner = new NetworkScanner(urlHandler.getInetSocketAddress(), outlets);
             ui12WebSocket = new Ui12WebSocket(urlHandler.getURI(), new MessageHandler(outlets));
             ui12WebSocket.connectBlocking();
+            networkScanner.ping(ui12WebSocket);
         } catch (Exception e) {
-            outlets.error("ERROR:", e);
+            outlets.error(e);
             sendStatus(Status.NOT_CONNECTED_YET);
         }
     }
@@ -78,25 +72,16 @@ class CommandHandler {
             return;
         }
 
-        if (!(ui12WebSocket.isClosed() || ui12WebSocket.isClosing())) {
-            ui12WebSocket.close();
-            sleep();
-            sendStatus(Status.CLOSED);
-
-            // something is a wrong
-            ui12WebSocket = null;
-        }
-    }
-
-    private void sleep() {
         try {
-            TimeUnit.SECONDS.sleep(FIVE);
-        } catch (InterruptedException ignored) {
+            ui12WebSocket.closeBlocking();
+            ui12WebSocket = null;
+        } catch (Exception e) {
+            outlets.error(e);
         }
     }
 
     /**
-     * Executes one of the following actions: START or STOP.
+     * Based on the command invokes the corresponded methods.
      *
      * @param message either url or msg
      * @param args see {@link com.cycling74.max.MaxObject#anything(String, Atom[])}
@@ -106,22 +91,16 @@ class CommandHandler {
         outlets.debug(">> Command:{}", command.name());
         switch (command) {
             case SET_URL:
-                startNetworkScan(args);
+                if (args.length == 0) { // no url
+                    stopJob();
+                } else { // url is defined
+                    startJob(args);
+                }
                 break;
             case SEND_MESSAGE:
                 send(args);
                 break;
             default:
-        }
-    }
-
-    private void startNetworkScan(final Atom[] args) {
-        try {
-            urlHandler.parse(args);
-            networkScanner = new NetworkScanner(urlHandler.getInetSocketAddress(), outlets);
-            networkScanner.ping();
-        } catch (Exception e) {
-            outlets.error(">> Error:", e);
         }
     }
 
@@ -136,11 +115,16 @@ class CommandHandler {
             return;
         }
 
-        // try make reconnection when it's possible
         try {
+            // try make reconnection when it's possible
+            if (ui12WebSocket.isClosed()) {
+                ui12WebSocket.closeBlocking();
+                ui12WebSocket = new Ui12WebSocket(urlHandler.getURI(), new MessageHandler(outlets));
+                ui12WebSocket.connectBlocking();
+            }
             ui12WebSocket.toUi12Device(args);
         } catch (Exception e) {
-            outlets.error(">> Error:", e);
+            outlets.error(e);
             sendStatus(Status.CLOSED);
         }
     }
